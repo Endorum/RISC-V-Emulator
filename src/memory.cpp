@@ -24,6 +24,7 @@ u32 Memory::load(u32 address, BITSIZE size) {
 
 void Memory::store(u32 address, BITSIZE size, u32 value) {
 
+
     // check if in output console log
     if(address == UART0_BASE && size == BYTE){
         putchar(value & 0xFF); // output least sig bit

@@ -12,6 +12,7 @@ u8* load_bin(const std::string& filename, size_t& out_size) {
     std::ifstream file(filename, std::ios::binary | std::ios::ate);
     if (!file.is_open()) {
         std::cerr << "Failed to open file: " << filename << "\n";
+        exit(-1);
         out_size = 0;
         return nullptr;
     }
@@ -40,16 +41,30 @@ int main(){
     CPU cpu;
 
     size_t size;
-    u8* program = load_bin("test.bin", size);
+    u8* program = load_bin("OS/build/rom.bin", size);
 
+    size = 0x100000;
     cpu.load_rom(program, size);
 
-
-    
+    // printf("loaded ROM\n");
 
 
     cpu.run(size);
 
+    cpu.print_instr();
+    cpu.print_reg_file();
+    cpu.print_regf_file();
+
+    printf("ROM:\n");
+    print_memory(0x0, 0xF, cpu.get_memory());
+    
+    printf("DISK:\n");
+    print_memory(0x00010000, 0xF, cpu.get_memory());
+
+    printf("RAM:\n");
+    print_memory(0xF0000000, 0xF, cpu.get_memory());
+    
+    
     
 
     

@@ -111,18 +111,14 @@ public:
 
     void run(size_t size){
         u32 pc_og = pc;
+        int running = 0;
 
-        while((pc-pc_og) < size){
+        while((pc-pc_og) < size && (running++) < 1000){
             fetch();
             decode();
             execute();
-            print_instr();
-            print_reg_file();
-            // print_regf_file();
-            // printf("Code:\n");
-            // print_memory(0x0, 0xF, get_memory());
 
-            // printf("%s\n",debug_mnemonic.c_str());
+            // if(current_instr.instr == 0x00008067) break;
         }
         
         

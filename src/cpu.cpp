@@ -88,7 +88,15 @@ InstrFormat CPU::get_format(u32 instr, OpType* type) {
     
 
     switch(opcode){
-        default: printf("Unknown opcode: %02X\n", opcode); break;
+        default:{ 
+            printf("Unknown opcode: %02X\n", opcode);
+            
+            print_instr();
+            print_reg_file();
+            
+            
+            break; 
+        }
 
         case 0x33: // ALU operations are all R Format, different operations are determined from the funct3 and funct7 fields
             *type = OT_ALU_R;    
@@ -558,18 +566,17 @@ void CPU::BRANCH_B(){
 void CPU::JAL_J(){
     debug_mnemonic = "jal";
 
-    printf("JAL to : %08X=%d\n",current_instr.imm - 4,current_instr.imm - 4);
-
     set_reg(current_instr.rd, pc);
     pc += current_instr.imm - 4;
 }
 void CPU::JALR_I(){
     debug_mnemonic = "jalr";
-
-    printf("JALR to : %08X=%d\n",current_instr.imm - 4,current_instr.imm - 4);
     
     set_reg(current_instr.rd, pc);
-    pc += static_cast<i32>(get_reg(current_instr.rs1)) + current_instr.imm - 4;
+
+    i32 off = static_cast<i32>(static_cast<i32>(get_reg(current_instr.rs1)) + static_cast<i32>(current_instr.imm) - 4);
+    
+    pc += off;
 }
 void CPU::LUI_U(){
     debug_mnemonic = "lui";
