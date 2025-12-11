@@ -40,7 +40,7 @@ int main(){
     CPU cpu;
 
     size_t size;
-    u8* program = load_bin("assembly/test.bin", size);
+    u8* program = load_bin("test.bin", size);
 
     cpu.load_rom(program, size);
 
@@ -50,6 +50,7 @@ int main(){
 
     cpu.run(size);
 
+    
 
     
 

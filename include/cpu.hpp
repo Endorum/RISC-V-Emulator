@@ -116,8 +116,8 @@ public:
             fetch();
             decode();
             execute();
-            // // print_instr();
-            // print_reg_file();
+            print_instr();
+            print_reg_file();
             // print_regf_file();
             // printf("Code:\n");
             // print_memory(0x0, 0xF, get_memory());

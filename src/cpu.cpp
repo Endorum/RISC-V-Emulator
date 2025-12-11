@@ -558,11 +558,15 @@ void CPU::BRANCH_B(){
 void CPU::JAL_J(){
     debug_mnemonic = "jal";
 
+    printf("JAL to : %08X=%d\n",current_instr.imm - 4,current_instr.imm - 4);
+
     set_reg(current_instr.rd, pc);
     pc += current_instr.imm - 4;
 }
 void CPU::JALR_I(){
     debug_mnemonic = "jalr";
+
+    printf("JALR to : %08X=%d\n",current_instr.imm - 4,current_instr.imm - 4);
     
     set_reg(current_instr.rd, pc);
     pc += static_cast<i32>(get_reg(current_instr.rs1)) + current_instr.imm - 4;
