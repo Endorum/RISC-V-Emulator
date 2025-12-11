@@ -1,6 +1,8 @@
 #pragma once
 
+
 #include <stdint.h>
+#include <float.h>
 
 #define u8 uint8_t
 #define u16 uint16_t
@@ -12,10 +14,15 @@
 #define i32 int32_t
 #define i64 int64_t
 
+#define f32 float
+static_assert(sizeof(f32) * 8 == 32, "f32 must be 32-bit");
+
 #define XLENGTH 32
 
 #define PAGE_SIZE 4096
 #define PAGE_AMNT 1048576
+
+#define UART0_BASE 0x10000000 // = 65.536th page
 
 
 typedef enum{
@@ -34,6 +41,9 @@ typedef enum{
     IF_U,
     IF_J,
 
+    // Special FP format
+    IF_R4,
+
 }InstrFormat;
 
 typedef enum{
@@ -49,5 +59,13 @@ typedef enum{
     OT_AUIPC_U,
     OT_ECALL_I,
 
-    // can be extended
+    // Floating point
+    OT_FLW,
+    OT_FSW,
+    OT_FMADD,
+    OT_FMSUB,
+    OT_FNMSUB,
+    OT_FNMADD,
+    OT_FALU,
+
 }OpType;

@@ -23,6 +23,14 @@ u32 Memory::load(u32 address, BITSIZE size) {
 }
 
 void Memory::store(u32 address, BITSIZE size, u32 value) {
+
+    // check if in output console log
+    if(address == UART0_BASE && size == BYTE){
+        putchar(value & 0xFF); // output least sig bit
+        fflush(stdout);
+        return;
+    }
+
     for (u32 i = 0; i < size; ++i) {
         u32 addr = address + i;
         u32 page_num = addr / PAGE_SIZE;

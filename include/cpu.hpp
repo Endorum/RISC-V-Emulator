@@ -2,6 +2,7 @@
 
 #include "definitions.hpp"
 #include "memory.hpp"
+#include "utils.hpp"
 
 #include <string>
 
@@ -17,6 +18,8 @@ typedef struct Instr{
     u8 rs2; // 20-24
     u8 rs1; // 15-19
     u8 rd;  // 7-11
+
+    u8 rs3; // used for some FP ops
 
     // funct3 is also used multiple times
     u8 funct3;
@@ -42,6 +45,8 @@ public:
         current_instr = {}; 
         pc = 0;
         debug_mnemonic = "???";
+
+        fcsr = 0; // ?
         
     }
 
@@ -58,6 +63,14 @@ public:
 
     void set_reg(u32 idx, u32 value){
         if(idx != 0) reg_file[idx] = value; // register 0 cant be overwritten
+    }
+
+    f32 get_regf(u32 idx) const {
+        return f_reg_file[idx];
+    }
+
+    void set_regf(u32 idx, f32 value){
+        f_reg_file[idx] = value;
     }
 
     // load current word using pc as address and advancing pc with 4
@@ -88,6 +101,7 @@ public:
     void print_instr();
 
     void print_reg_file();
+    void print_regf_file();
 
     void load_rom(u8* data, size_t size, u32 entry=0x0){
         for(size_t i=0; i<size; i++){
@@ -102,8 +116,13 @@ public:
             fetch();
             decode();
             execute();
-            print_reg_file();
-            printf("%s\n",debug_mnemonic.c_str());
+            // // print_instr();
+            // print_reg_file();
+            // print_regf_file();
+            // printf("Code:\n");
+            // print_memory(0x0, 0xF, get_memory());
+
+            // printf("%s\n",debug_mnemonic.c_str());
         }
         
         
@@ -112,10 +131,18 @@ public:
     
 private:
     
-    // Register File
+    // Register File, for general purpose and for integer arithmetic
     u32 reg_file[32] = {0};
-    
+
+    // Program counter
     u32 pc;
+
+    // Floating point register file, for floating point arithmetic
+    f32 f_reg_file[32] = {0};
+
+    // floating point control and status register
+    u32 fcsr;
+    
 
     Memory* memory;
 
@@ -137,4 +164,13 @@ private:
     void LUI_U();
     void AUIPC_U();
     void ECALL_I();
+
+    // FP
+    void FLW();
+    void FSW();
+    void FMADD();
+    void FMSUB();
+    void FNMSUB();
+    void FNMADD();
+    void FALU();
 };  

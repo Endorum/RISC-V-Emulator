@@ -50,17 +50,11 @@ int main(){
 
     cpu.run(size);
 
-    printf("Code:\n");
-    print_memory(0x0, 0xF, cpu.get_memory());
-
-    printf("Memory:\n");
-    print_memory(0xFF, 0xF, cpu.get_memory());
-
 
     
 
     
-    // print_memory(0x0, 0xF, cpu.get_memory());
+    // print_memory(0x2000, 0xF, cpu.get_memory());
     
     
     // printf("%08X\n",v);

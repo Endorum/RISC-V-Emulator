@@ -2,16 +2,22 @@
     .globl _start
 _start:
 
-    li x10, 0x123
-    slli x10, x10, 0x10
+    # Base address for UART0
+    la x1, 0x10000000
 
-    li x11, 0x456
-    add x10, x10, x11
+    # Characters to print
+    li x2, 'H'
+    sb x2, 0(x1)
+    li x2, 'e'
+    sb x2, 0(x1)
+    li x2, 'l'
+    sb x2, 0(x1)
+    li x2, 'l'
+    sb x2, 0(x1)
+    li x2, 'o'
+    sb x2, 0(x1)
+    li x2, '\n'
+    sb x2, 0(x1)
 
-    li x1, 0xFF
-
-    sw x10, 0(x1)
-
-    lw x20, 0(x1)
-
-    nop
+done:
+    j done
