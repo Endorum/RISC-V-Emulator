@@ -3,6 +3,8 @@
 #include "definitions.hpp"
 #include "memory.hpp"
 
+#include <string>
+
 typedef struct Instr{
 
     u32 instr;
@@ -39,6 +41,8 @@ public:
         memory = new Memory();
         current_instr = {}; 
         pc = 0;
+        debug_mnemonic = "???";
+        
     }
 
     ~CPU(){
@@ -83,11 +87,34 @@ public:
 
     void print_instr();
 
+    void print_reg_file();
+
+    void load_rom(u8* data, size_t size, u32 entry=0x0){
+        for(size_t i=0; i<size; i++){
+            store(i+entry, BYTE, data[i]);
+        }
+    }
+
+    void run(size_t size){
+        u32 pc_og = pc;
+
+        while((pc-pc_og) < size){
+            fetch();
+            decode();
+            execute();
+            print_reg_file();
+            printf("%s\n",debug_mnemonic.c_str());
+        }
+        
+        
+    }
+
+    
 private:
-
+    
     // Register File
-    u32 reg_file[32];
-
+    u32 reg_file[32] = {0};
+    
     u32 pc;
 
     Memory* memory;
@@ -96,4 +123,18 @@ private:
 
     InstrFormat get_format(u32 instr, OpType* type);
 
+    std::string debug_mnemonic;
+
+
+
+    void ALU_R();
+    void ALU_I();
+    void LOAD_I();
+    void STORE_S();
+    void BRANCH_B();
+    void JAL_J();
+    void JALR_I();
+    void LUI_U();
+    void AUIPC_U();
+    void ECALL_I();
 };  
