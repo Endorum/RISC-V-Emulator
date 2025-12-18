@@ -1,6 +1,6 @@
 #include "../include/cpu.hpp"
 #include "../include/utils.hpp"
-#include "cpu.hpp"
+
 
 #include <string>
 
@@ -90,13 +90,11 @@ InstrFormat CPU::get_format(u32 instr, OpType* type) {
     switch(opcode){
         default:{ 
             printf("Unknown opcode: %02X\n", opcode);
-            
-            print_instr();
-            print_reg_file();
-            
-            
             break; 
         }
+
+        case 0x0B: // CUSTOM-0 -> Halt
+            break;
 
         case 0x33: // ALU operations are all R Format, different operations are determined from the funct3 and funct7 fields
             *type = OT_ALU_R;    
@@ -389,7 +387,7 @@ void CPU::ALU_I(){
 
         case 0x0:{
             debug_mnemonic = "addi";
-            set_reg(rd, rs1 + imm);
+            set_reg(rd, s_rs1 + imm);
             return;
         }
         case 0x1:{
@@ -404,7 +402,7 @@ void CPU::ALU_I(){
         }
         case 0x3:{
             debug_mnemonic = "sltiu";
-            set_reg(rd, ((rs1 < imm) ? 1 : 0) );
+            set_reg(rd, ((rs1 < static_cast<u32>(imm)) ? 1 : 0) );
             return;
         }
         case 0x4:{
@@ -574,9 +572,9 @@ void CPU::JALR_I(){
     
     set_reg(current_instr.rd, pc);
 
-    i32 off = static_cast<i32>(static_cast<i32>(get_reg(current_instr.rs1)) + static_cast<i32>(current_instr.imm) - 4);
+    u32 addr = static_cast<u32>(static_cast<i32>(get_reg(current_instr.rs1)) + static_cast<i32>(current_instr.imm));
     
-    pc += off;
+    pc = addr;
 }
 void CPU::LUI_U(){
     debug_mnemonic = "lui";
@@ -588,10 +586,40 @@ void CPU::AUIPC_U(){
     
     set_reg(current_instr.rd, pc + (current_instr.imm << 12));
 }
+
+void CPU::os_puts(uint32_t addr){
+    u32 i = addr;
+
+    u8 c = memory->load(i, BYTE);
+    std::string str;
+    while(c){
+        str += c;
+        i++;
+        c = memory->load(i, BYTE);
+    }
+
+    printf("%s", str.c_str());
+}
+
 void CPU::ECALL_I(){
     debug_mnemonic = "ecall";
 
-    // does nothing for now
+    switch(get_reg(17)){
+        default:break;
+        case SYS_PUTS:
+            os_puts(get_reg(10));
+            break;
+        case SYS_EXIT:
+            printf("SYS_EXIT\n");
+            exit(get_reg(10));
+            break;
+        case SYS_PUTC:
+            putc(get_reg(10), stdout);
+            break;
+        case SYS_STEP:
+            step = true;     
+            break;
+    }
 }
 
 
@@ -882,55 +910,85 @@ std::string op_type_to_string(OpType type){
     return "?";
 }
 
+std::string reg_to_str(u8 idx){
+        
+        if(idx == 0) return "zero";
+        if(idx == 1) return "ra";
+        if(idx == 2) return "sp";
+        if(idx == 3) return "gp";
+        if(idx == 4) return "tp";
+        if(idx == 5) return "t0";
+        if(idx == 6) return "t1";
+        if(idx == 7) return "t2";
+        if(idx == 8) return "s0";
+        if(idx == 9) return "s1";
+        if(idx == 10) return "a0";
+        if(idx == 11) return "a1";
+        if(idx == 12) return "a2";
+        if(idx == 13) return "a3";
+        if(idx == 14) return "a4";
+        if(idx == 15) return "a5";
+        if(idx == 16) return "a6";
+        if(idx == 17) return "a7";
+        if(idx == 18) return "s2";
+        if(idx == 19) return "s3";
+        if(idx == 20) return "s4";
+        if(idx == 21) return "s5";
+        if(idx == 22) return "s6";
+        if(idx == 23) return "s7";
+        if(idx == 24) return "s8";
+        if(idx == 25) return "s9";
+        if(idx == 26) return "s10";
+        if(idx == 27) return "s11";
+        if(idx == 28) return "t3";
+        if(idx == 29) return "t4";
+        if(idx == 30) return "t5";
+        if(idx == 31) return "t6";
+    
+    return "???";
+}
+
 // prints current instruction
 void CPU::print_instr() {
     Instr instr = current_instr;
 
-    printf("Instruction for: %08X\n", instr.instr);
+    // printf("instruction: %s\n",debug_mnemonic.c_str());
+    printf("    rs2:     %s\n", reg_to_str(current_instr.rs2).c_str()); 
+    printf("    rs1:     %s\n", reg_to_str(current_instr.rs1).c_str()); 
+    printf("    rd:      %s\n", reg_to_str(current_instr.rd).c_str()); 
+    printf("    imm: %08X = %d = %u\n",instr.imm,instr.imm,instr.imm);
     
-    printf("opcode: %02X = %d\n", instr.opcode,instr.opcode);
-    printf("rs2:    %02X = %d\n", instr.rs2,instr.rs2); 
-    printf("rs1:    %02X = %d\n", instr.rs1,instr.rs1); 
-    printf("rd:     %02X = %d\n", instr.rd,instr.rd); 
-    printf("funct3: %02X = %d\n", instr.funct3,instr.funct3);
-    printf("funct7: %02X = %d\n", instr.funct7,instr.funct7);
-    printf("imm: %08X = %d = %u\n",instr.imm,instr.imm,instr.imm);
-
-    printf("format:  %s\n", format_to_string(instr.format).c_str());
-    printf("op type: %s\n", op_type_to_string(instr.type).c_str());
-
-    printf("instruction mnemonic: %s\n",debug_mnemonic.c_str());
 
 
 }
 
 void CPU::print_reg_file() {
-    printf("--- Register File ---\n");
-    printf("x00: %08X, x01: %08X, x02: %08X, x03: %08X\n",
+    printf("Register File:\n");
+    printf("    x0:     %08X, x1/ra:  %08X, x2/sp:  %08X, x3/gp:  %08X\n",
        get_reg(0), get_reg(1), get_reg(2), get_reg(3));
 
-    printf("x04: %08X, x05: %08X, x06: %08X, x07: %08X\n",
+    printf("    x4/tp:  %08X, x5/t0:  %08X, x6/t1:  %08X, x7/t2:  %08X\n",
         get_reg(4), get_reg(5), get_reg(6), get_reg(7));
 
-    printf("x08: %08X, x09: %08X, x10: %08X, x11: %08X\n",
+    printf("    x8/s0:  %08X, x9/s1:  %08X, x10/a0: %08X, x11/a1: %08X\n",
         get_reg(8), get_reg(9), get_reg(10), get_reg(11));
 
-    printf("x12: %08X, x13: %08X, x14: %08X, x15: %08X\n",
+    printf("    x12/a2: %08X, x13/a3: %08X, x14/a4: %08X, x15/a5: %08X\n",
         get_reg(12), get_reg(13), get_reg(14), get_reg(15));
 
-    printf("x16: %08X, x17: %08X, x18: %08X, x19: %08X\n",
+    printf("    x16/a6: %08X, x17/a7: %08X, x18/s2: %08X, x19/s3: %08X\n",
         get_reg(16), get_reg(17), get_reg(18), get_reg(19));
 
-    printf("x20: %08X, x21: %08X, x22: %08X, x23: %08X\n",
+    printf("    x20/s4: %08X, x21/s5: %08X, x22/s6: %08X, x23/s7: %08X\n",
         get_reg(20), get_reg(21), get_reg(22), get_reg(23));
 
-    printf("x24: %08X, x25: %08X, x26: %08X, x27: %08X\n",
+    printf("    x24/s8: %08X, x25/s9: %08X,    s10: %08X,    s11: %08X\n",
         get_reg(24), get_reg(25), get_reg(26), get_reg(27));
 
-    printf("x28: %08X, x29: %08X, x30: %08X, x31: %08X\n",
+    printf("    x28/t3: %08X, x29/t4: %08X, x30/t5: %08X, x31/t6: %08X\n",
         get_reg(28), get_reg(29), get_reg(30), get_reg(31));
 
-    printf("pc:  %08X\n",pc);
+    printf("    PC: %08X\n",pc);
 
 }
 
@@ -961,4 +1019,15 @@ void CPU::print_regf_file(){
         get_regf(28), get_regf(29), get_regf(30), get_regf(31));
 
     printf("pc:  %08X\n",pc);
+}
+
+void CPU::debug() {
+    printf("Instruction at %08X : %s\n", prev_pc, debug_mnemonic.c_str());
+    print_instr();
+    print_reg_file();
+    printf("STACK\n");
+    print_stack_memory(get_reg(2), memory);
+    printf("\n");
+    printf("RAM\n");
+    print_memory(0xF0010000, 16, memory);
 }

@@ -1,12 +1,6 @@
 #ifndef STDIO_H
 #define STDIO_H
 
-#include "../include/defs.h"
-
-#include <stdint.h>
-
-
-void puts(char* str);
-
+void puts(const char* str);
 
 #endif

@@ -1,6 +1,4 @@
 #include "../include/utils.hpp"
-#include "utils.hpp"
-
 
 #include <cstdio>
 #include <stdlib.h>
@@ -23,8 +21,25 @@ i32 sign_extend(u32 value, int bits) {
     return (value ^ mask) - mask;
 }
 
+void print_stack_memory(u32 stack, Memory* memory) {
+    int words_per_line = 4;
+    int offsets[3] = { -16, 0, 16 };  // offsets for the first word of each line
+
+    for(int line = 0; line < 3; ++line) {
+        int base_offset = offsets[line];
+        printf("%+4d ", base_offset);
+
+        for(int i = 0; i < words_per_line; ++i) {
+            u32 addr = stack + base_offset + i * 4;
+            printf("%08X ", memory->load(addr, WORD));
+        }
+
+        printf("\n");
+    }
+}
+
 void print_memory(u32 start_addr, u32 amount, Memory* memory) {
-    amount = amount + 1;
+    amount = amount;
 
     // Ensure start address is word-aligned
     start_addr &= ~0x3;

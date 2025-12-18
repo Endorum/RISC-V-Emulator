@@ -14,3 +14,13 @@ UART registers:
 
 ROM is from
 0x0 - 0x0FFFFFFF = 0x10000000
+
+UPDATED:
+ROM         0x00000000 
+OS_ROM      0x00000000 
+DISK        0x00010000 
+UART0       0x10000000 
+UART1       0x10000010 
+RAM         0xF0000000 
+STACK       0xFF000000 <- stack grows towords 0x0!!
+USER_STACK  0xFFFFFFFF

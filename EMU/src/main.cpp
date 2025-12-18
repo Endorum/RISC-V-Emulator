@@ -41,19 +41,19 @@ int main(){
     CPU cpu;
 
     size_t size;
-    u8* program = load_bin("OS/build/rom.bin", size);
+    u8* program = load_bin("rom.bin", size);
 
     size = 0x100000;
     cpu.load_rom(program, size);
 
-    // printf("loaded ROM\n");
+    printf("loaded ROM\n");
 
 
-    cpu.run(size);
+    cpu.run();
 
-    cpu.print_instr();
+    // cpu.print_instr();
     cpu.print_reg_file();
-    cpu.print_regf_file();
+    // cpu.print_regf_file();
 
     printf("ROM:\n");
     print_memory(0x0, 0xF, cpu.get_memory());
@@ -63,6 +63,12 @@ int main(){
 
     printf("RAM:\n");
     print_memory(0xF0000000, 0xF, cpu.get_memory());
+
+    printf("RAM at p1:\n");
+    print_memory(0xF0010000, 0xF, cpu.get_memory());
+
+    printf("RAM at p2:\n");
+    print_memory(0xF0020000, 0xF, cpu.get_memory());
     
     
     

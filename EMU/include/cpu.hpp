@@ -42,9 +42,12 @@ public:
     
     CPU(){
         memory = new Memory();
-        current_instr = {}; 
+        current_instr = {0,0,0,0,0,0,0,0,0,IF_NONE, OT_NONE}; 
         pc = 0;
         debug_mnemonic = "???";
+
+        // setting stack
+        reg_file[2] = STACK;
 
         fcsr = 0; // ?
         
@@ -82,6 +85,11 @@ public:
     }
 
     void fetch(){
+        // reset
+        current_instr = {0,0,0,0,0,0,0,0,0, IF_NONE, OT_NONE}; 
+        debug_mnemonic = "???";
+
+
         u32 instr = load_current();
         current_instr.instr = instr;
     }
@@ -109,16 +117,34 @@ public:
         }
     }
 
-    void run(size_t size){
-        u32 pc_og = pc;
-        int running = 0;
+    void debug();
 
-        while((pc-pc_og) < size && (running++) < 1000){
+    void run(){
+        bool running = true;
+
+        while(running){
+            if(debug_mode)
+                debug();
+
+            prev_pc = pc;
             fetch();
             decode();
+
+            if((current_instr.instr & 0x7F) == 0x0B){ // CUSTOM-0 -> halt
+                printf("halted using CUSTOM-0\n");
+                break;
+            }
+
             execute();
 
-            // if(current_instr.instr == 0x00008067) break;
+            
+
+            if(step){
+                debug_mode = true;
+                while(getchar() != '\n');  // wait until Enter is pressed
+            }
+
+            
         }
         
         
@@ -132,6 +158,7 @@ private:
 
     // Program counter
     u32 pc;
+    u32 prev_pc; // debug
 
     // Floating point register file, for floating point arithmetic
     f32 f_reg_file[32] = {0};
@@ -148,6 +175,9 @@ private:
 
     std::string debug_mnemonic;
 
+    bool step = false;
+    bool debug_mode = false;
+
 
 
     void ALU_R();
@@ -159,6 +189,9 @@ private:
     void JALR_I();
     void LUI_U();
     void AUIPC_U();
+
+
+    void os_puts(uint32_t addr);
     void ECALL_I();
 
     // FP

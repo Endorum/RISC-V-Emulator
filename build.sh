@@ -1,53 +1,162 @@
 #!/bin/bash
+set -e
 
-# Compile p1.c to ELF
-riscv64-unknown-elf-gcc -march=rv32imf -mabi=ilp32 -ffreestanding -nostdlib -fno-builtin -O0 \
-    -o OS/build/p1.elf OS/src/p1.c
+echo "===== RISC-V OS Build ====="
 
-# Generate assembly for p1
-riscv64-unknown-elf-gcc -march=rv32imf -mabi=ilp32 -ffreestanding -nostdlib -fno-builtin -O0 \
-    -S OS/src/p1.c -o OS/build/p1.s
+# -------------------------------------------------
+# Paths
+# -------------------------------------------------
+OS_DIR="OS"
+SRC_DIR="$OS_DIR/src"
+LIBC_DIR="$OS_DIR/libc"
+PROG_DIR="USER"
+INCLUDE_DIR="$OS_DIR/include"
+BUILD_DIR="$OS_DIR/build"
+ROM_FILE="rom.bin"
 
-# Convert p1 to binary
-riscv64-unknown-elf-objcopy -O binary OS/build/p1.elf OS/build/p1.bin
+mkdir -p "$BUILD_DIR"
 
-# Compile p2.c to ELF
-riscv64-unknown-elf-gcc -march=rv32imf -mabi=ilp32 -ffreestanding -nostdlib -fno-builtin -O0 \
-    -o OS/build/p2.elf OS/src/p2.c
+# -------------------------------------------------
+# Toolchain
+# -------------------------------------------------
+CC="riscv64-unknown-elf-gcc"
+OBJCOPY="riscv64-unknown-elf-objcopy"
 
-# Generate assembly for p2
-riscv64-unknown-elf-gcc -march=rv32imf -mabi=ilp32 -ffreestanding -nostdlib -fno-builtin -O0 \
-    -S OS/src/p2.c -o OS/build/p2.s
+# -------------------------------------------------
+# Common flags
+# -------------------------------------------------
+COMMON_FLAGS="
+-march=rv32imf 
+-mabi=ilp32 
+-ffreestanding 
+-nostdlib 
+-nostdinc 
+-fno-builtin 
+-O0 -I$INCLUDE_DIR"
 
-# Convert p2 to binary
-riscv64-unknown-elf-objcopy -O binary OS/build/p2.elf OS/build/p2.bin
+# -------------------------------------------------
+# Memory layout
+# -------------------------------------------------
+OS_OFFSET=0x00000000
+PROGRAM_BASE=0x00010000
+PROGRAM_STRIDE=0x10000
+EXTRA_SPACE=0x10000
 
-# Compile OS to ELF using linker script
-riscv64-unknown-elf-gcc -march=rv32imf -mabi=ilp32 -ffreestanding -nostdlib -fno-builtin -O0 \
-    -T linker.ld -o OS/build/os.elf OS/src/os.c
+# -------------------------------------------------
+# Build OS (kernel)
+# -------------------------------------------------
+echo
+echo "===== Building OS (kernel) ====="
 
-# Generate assembly for OS
-riscv64-unknown-elf-gcc -march=rv32imf -mabi=ilp32 -ffreestanding -nostdlib -fno-builtin -O0 \
-    -S OS/src/os.c -o OS/build/os.s
+OS_ELF="$BUILD_DIR/os.elf"
+OS_BIN="$BUILD_DIR/os.bin"
+OS_ASM="$BUILD_DIR/os.s"
 
-# Convert OS to binary
-riscv64-unknown-elf-objcopy -O binary OS/build/os.elf OS/build/os.bin
+OS_SRCS=(
+    "$SRC_DIR/os.c"
+    "$SRC_DIR/uart.c"
+)
 
-# Determine total ROM size: OS + programs
-OS_SIZE=$(stat -f%z OS/build/os.bin)      # macOS stat
-P1_SIZE=$(stat -f%z OS/build/p1.bin)
-P2_SIZE=$(stat -f%z OS/build/p2.bin)
+echo "Compiling OS..."
+$CC $COMMON_FLAGS \
+    -T linker.ld \
+    -o "$OS_ELF" \
+    "${OS_SRCS[@]}"
 
-TOTAL_SIZE=$((0x20000 + P2_SIZE))        # largest offset you plan to copy
+echo "Generating OS assembly..."
+$CC $COMMON_FLAGS -S "$SRC_DIR/os.c" -o "$OS_ASM"
 
-# Create ROM (sparse / fast)
-truncate -s $TOTAL_SIZE OS/build/rom.bin
+echo "Converting OS to binary..."
+$OBJCOPY -O binary "$OS_ELF" "$OS_BIN"
 
-# Copy OS at offset 0
-dd if=OS/build/os.bin of=OS/build/rom.bin bs=1 seek=0 conv=notrunc
+OS_SIZE=$(stat -f%z "$OS_BIN")
+echo "OS size: $OS_SIZE bytes"
 
-# Copy p1 at offset 0x00010000
-dd if=OS/build/p1.bin of=OS/build/rom.bin bs=1 seek=$((0x00010000)) conv=notrunc
+# -------------------------------------------------
+# Build user programs
+# -------------------------------------------------
+echo
+echo "===== Building user programs ====="
 
-# Copy p2 at offset 0x00020000
-dd if=OS/build/p2.bin of=OS/build/rom.bin bs=1 seek=$((0x00020000)) conv=notrunc
+PROGRAM_FILES=("$PROG_DIR"/*.c)
+PROGRAM_BINS=()
+PROGRAM_OFFSETS=()
+
+idx=0
+for PROG in "${PROGRAM_FILES[@]}"; do
+    NAME=$(basename "$PROG" .c)
+
+    ELF="$BUILD_DIR/$NAME.elf"
+    BIN="$BUILD_DIR/$NAME.bin"
+    ASM="$BUILD_DIR/$NAME.s"
+
+    OFFSET=$((PROGRAM_BASE + idx * PROGRAM_STRIDE))
+
+    echo
+    echo "Building program: $NAME"
+    echo "ROM offset: $(printf "0x%08X" $OFFSET)"
+
+    # ---- Compile & link (WITH libc) ----
+    $CC $COMMON_FLAGS \
+        -T "user.ld" \
+        -nostdlib -ffreestanding \
+        -o "$ELF" \
+        "$PROG" \
+        "$LIBC_DIR/stdio.c" \
+        "$LIBC_DIR/syscall.c"
+
+    # ---- Generate assembly (program only) ----
+    $CC $COMMON_FLAGS \
+        -S "$PROG" \
+        -o "$ASM"
+
+    # ---- Binary ----
+    $OBJCOPY -O binary "$ELF" "$BIN"
+
+    SIZE=$(stat -f%z "$BIN")
+    echo "Size: $SIZE bytes"
+
+    PROGRAM_BINS+=("$BIN")
+    PROGRAM_OFFSETS+=($OFFSET)
+
+    idx=$((idx + 1))
+done
+
+
+# -------------------------------------------------
+# Create ROM
+# -------------------------------------------------
+echo
+echo "===== Creating ROM image ====="
+
+MAX_END=$((OS_OFFSET + OS_SIZE))
+
+for i in "${!PROGRAM_BINS[@]}"; do
+    SIZE=$(stat -f%z "${PROGRAM_BINS[$i]}")
+    END=$((PROGRAM_OFFSETS[$i] + SIZE))
+    (( END > MAX_END )) && MAX_END=$END
+done
+
+TOTAL_SIZE=$((MAX_END + EXTRA_SPACE))
+echo "ROM size: $TOTAL_SIZE bytes"
+
+truncate -s "$TOTAL_SIZE" "$ROM_FILE"
+
+echo "Copying OS..."
+dd if="$OS_BIN" of="$ROM_FILE" bs=1 seek=$OS_OFFSET conv=notrunc status=none
+
+for i in "${!PROGRAM_BINS[@]}"; do
+    echo "Copying $(basename "${PROGRAM_BINS[$i]}") at $(printf "0x%08X" ${PROGRAM_OFFSETS[$i]})"
+    dd if="${PROGRAM_BINS[$i]}" of="$ROM_FILE" bs=1 seek=${PROGRAM_OFFSETS[$i]} conv=notrunc status=none
+done
+
+# -------------------------------------------------
+# Cleanup
+# -------------------------------------------------
+echo
+echo "===== Cleanup ====="
+rm -f "$BUILD_DIR"/*.elf
+rm -f "$BUILD_DIR"/*.bin
+
+echo
+echo "Build complete: $ROM_FILE"

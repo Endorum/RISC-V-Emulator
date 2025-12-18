@@ -5,15 +5,15 @@ CXX := g++
 CXXFLAGS := -Wall -Wextra -std=c++17 -Iinclude
 
 # Source and build directories
-SRC_DIR := src
-BUILD_DIR := build
+SRC_DIR := EMU/src
+BUILD_DIR := EMU/build
 TARGET := main
 
 # Find all .cpp files in SRC_DIR
-SRCS := $(wildcard $(SRC_DIR)/*.cpp)
+SRCS = $(wildcard $(SRC_DIR)/*.cpp)
 
 # Convert source files to object files in BUILD_DIR
-OBJS := $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(SRCS))
+OBJS = $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(SRCS))
 
 # Default target
 all: $(TARGET)
@@ -22,9 +22,12 @@ all: $(TARGET)
 $(TARGET): $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
-# Compile .cpp -> .o
+# Compile .cpp -> .o and generate .d dependency file
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp | $(BUILD_DIR)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) -MMD -c $< -o $@
+
+# Include dependency files (if they exist)
+-include $(OBJS:.o=.d)
 
 # Create build directory if it doesn't exist
 $(BUILD_DIR):
