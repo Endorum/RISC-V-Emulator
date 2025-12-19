@@ -24,12 +24,14 @@ static_assert(sizeof(f32) * 8 == 32, "f32 must be 32-bit");
 
 #define UART0_BASE 0x10000000 // = 65.536th page
 
-#define OS_ROM      0x00000000 
-#define DISK        0x00010000 
-#define UART0       0x10000000 
-#define UART1       0x10000010 
-#define RAM         0xF0000000 
-#define STACK       0xFF000000
+#define ROM             0x00000000 
+#define OS_ROM          0x00000000 
+#define DISK            0x00010000 
+#define UART0           0x10000000 
+#define UART1           0x10000010 
+#define RAM             0x20000000 
+#define HEAP            0xF0000000
+#define STACK           0xFF000000
 
 #define SYS_PUTC 0x00
 #define SYS_PUTS 0x01

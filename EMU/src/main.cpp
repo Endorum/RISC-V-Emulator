@@ -40,6 +40,8 @@ int main(){
     
     CPU cpu;
 
+    
+
     size_t size;
     u8* program = load_bin("rom.bin", size);
 
@@ -62,13 +64,12 @@ int main(){
     print_memory(0x00010000, 0xF, cpu.get_memory());
 
     printf("RAM:\n");
-    print_memory(0xF0000000, 0xF, cpu.get_memory());
+    print_memory(RAM, 0xF, cpu.get_memory());
 
-    printf("RAM at p1:\n");
-    print_memory(0xF0010000, 0xF, cpu.get_memory());
+    printf("HEAP:\n");
+    print_memory(HEAP, 0xF, cpu.get_memory());
 
-    printf("RAM at p2:\n");
-    print_memory(0xF0020000, 0xF, cpu.get_memory());
+    
     
     
     

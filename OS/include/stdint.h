@@ -22,4 +22,7 @@ typedef int16_t  i16;
 typedef uint16_t u16;
 typedef uint8_t  u8;
 
+#define NULL 0x0
+#define nullptr ((void*)0)
+
 #endif /* OS_STDINT_H */

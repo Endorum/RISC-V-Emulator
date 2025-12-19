@@ -19,6 +19,9 @@ the programs are on the ROM (~Disk) and are "loaded" into the RAM and then execu
 #include "../include/uart.h"
 #include "../include/syscall.h"
 
+#include "../include/malloc.h"
+#include "../include/string.h"
+
 
 #define PROGRAM_SIZE 4096 // 64kb for every program
 
@@ -85,19 +88,31 @@ __attribute__((section(".text.start")))
 void _start(void){
 
     
-    // Queue head = {0};
+    const char* str = "Hello World\n";
+
+    u32 length = strlen(str);
     
-    Program p1;
-    create_program(0x00010000,&p1);
-    load_from_disk(p1.address, PROGRAM_SIZE);
+    int* arr = (int*)malloc(length + 1);
     
-    // Program p2;
-    // create_program(0x00020000,&p2);
-    // load_from_disk(p2.address, PROGRAM_SIZE);
-    // syscall(SYS_STEP,0,0,0);
+    // syscall(SYS_STEP,0,0,0);    
+    for(int i=0;i<length;i++) arr[i] = str[i];
+
+    puts(str);
+
+    
+    // // Queue head = {0};
+    
+    // Program p1;
+    // create_program(0x00010000,&p1);
+    // load_from_disk(p1.address, PROGRAM_SIZE);
+    
+    // // Program p2;
+    // // create_program(0x00020000,&p2);
+    // // load_from_disk(p2.address, PROGRAM_SIZE);
     
     
-    call_program_in_ram(p1.entry);
+    
+    // call_program_in_ram(p1.entry);
 
     riscv_halt();
     return;

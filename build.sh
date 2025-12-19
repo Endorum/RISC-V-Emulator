@@ -55,6 +55,9 @@ OS_ASM="$BUILD_DIR/os.s"
 OS_SRCS=(
     "$SRC_DIR/os.c"
     "$SRC_DIR/uart.c"
+    "$LIBC_DIR/malloc.c"
+    "$LIBC_DIR/string.c"
+    "$LIBC_DIR/stdio.c"
 )
 
 echo "Compiling OS..."
@@ -103,7 +106,9 @@ for PROG in "${PROGRAM_FILES[@]}"; do
         -o "$ELF" \
         "$PROG" \
         "$LIBC_DIR/stdio.c" \
-        "$LIBC_DIR/syscall.c"
+        "$LIBC_DIR/syscall.c" \
+        "$LIBC_DIR/malloc.c" \
+        "$LIBC_DIR/string.c"
 
     # ---- Generate assembly (program only) ----
     $CC $COMMON_FLAGS \

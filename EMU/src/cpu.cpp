@@ -1028,6 +1028,6 @@ void CPU::debug() {
     printf("STACK\n");
     print_stack_memory(get_reg(2), memory);
     printf("\n");
-    printf("RAM\n");
-    print_memory(0xF0010000, 16, memory);
+    printf("HEAP\n");
+    print_memory(0xF0000000, 16, memory);
 }

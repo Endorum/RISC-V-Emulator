@@ -6,7 +6,7 @@ int main(){
     int n = 0xFF00;
     int c = 0x0022;
     int d = n + c; // FF22 should end up somewhere in the reg file
-
+    
     return d;
 }
 
