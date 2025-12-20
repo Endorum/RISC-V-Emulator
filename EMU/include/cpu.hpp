@@ -137,11 +137,14 @@ public:
 
             execute();
 
-            
+            printf("step: %d\n",step);
 
             if(step){
                 debug_mode = true;
                 while(getchar() != '\n');  // wait until Enter is pressed
+            }else{
+                debug_mode = false;
+                continue;
             }
 
             

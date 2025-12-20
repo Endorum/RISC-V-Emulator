@@ -3,10 +3,11 @@
 #include "syscall.h"
 
 int main(){
+    syscall(SYS_STEP,0,0,0);
     int n = 0xFF00;
     int c = 0x0022;
     int d = n + c; // FF22 should end up somewhere in the reg file
-    
+    syscall(SYS_CONT,0,0,0);
     return d;
 }
 

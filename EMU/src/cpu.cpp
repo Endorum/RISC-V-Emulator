@@ -619,6 +619,9 @@ void CPU::ECALL_I(){
         case SYS_STEP:
             step = true;     
             break;
+        case SYS_CONT:
+            step = false;
+            break;
     }
 }
 

@@ -53,11 +53,13 @@ OS_BIN="$BUILD_DIR/os.bin"
 OS_ASM="$BUILD_DIR/os.s"
 
 OS_SRCS=(
-    "$SRC_DIR/os.c"
+    "$SRC_DIR/kernel.c"
     "$SRC_DIR/uart.c"
+    "$SRC_DIR/process.c"
     "$LIBC_DIR/malloc.c"
     "$LIBC_DIR/string.c"
     "$LIBC_DIR/stdio.c"
+    "$LIBC_DIR/syscall.c"
 )
 
 echo "Compiling OS..."
@@ -65,9 +67,6 @@ $CC $COMMON_FLAGS \
     -T linker.ld \
     -o "$OS_ELF" \
     "${OS_SRCS[@]}"
-
-echo "Generating OS assembly..."
-$CC $COMMON_FLAGS -S "$SRC_DIR/os.c" -o "$OS_ASM"
 
 echo "Converting OS to binary..."
 $OBJCOPY -O binary "$OS_ELF" "$OS_BIN"
@@ -108,7 +107,8 @@ for PROG in "${PROGRAM_FILES[@]}"; do
         "$LIBC_DIR/stdio.c" \
         "$LIBC_DIR/syscall.c" \
         "$LIBC_DIR/malloc.c" \
-        "$LIBC_DIR/string.c"
+        "$LIBC_DIR/string.c" \
+        "$SRC_DIR/process.c" 
 
     # ---- Generate assembly (program only) ----
     $CC $COMMON_FLAGS \
@@ -127,6 +127,50 @@ for PROG in "${PROGRAM_FILES[@]}"; do
     idx=$((idx + 1))
 done
 
+# -------------------------------------------------
+# Generate assembly for OS sources
+# -------------------------------------------------
+echo
+echo "===== Generating OS assembly files ====="
+
+# Collect all OS sources
+OS_ALL_SRCS=("$SRC_DIR"/*.c "$LIBC_DIR"/*.c)
+
+for SRC in "${OS_ALL_SRCS[@]}"; do
+    FILE=$(basename "$SRC" .c)
+    ASM="$BUILD_DIR/$FILE.s"
+
+    echo "Generating assembly for $FILE..."
+    $CC $COMMON_FLAGS -S "$SRC" -o "$ASM"
+done
+
+# -------------------------------------------------
+# Generate disassembly dumps for OS sources
+# -------------------------------------------------
+echo
+echo "===== Generating OS disassembly ====="
+
+# First, compile all .c files to .o
+OS_OBJS=()
+for SRC in "$SRC_DIR"/*.c "$LIBC_DIR"/*.c; do
+    FILE=$(basename "$SRC" .c)
+    OBJ="$BUILD_DIR/$FILE.o"
+    $CC $COMMON_FLAGS -c "$SRC" -o "$OBJ"
+    OS_OBJS+=("$OBJ")
+done
+
+# Then, create disassembly ELF per source file including all dependencies
+for SRC in "$SRC_DIR"/*.c "$LIBC_DIR"/*.c; do
+    FILE=$(basename "$SRC" .c)
+    ELF="$BUILD_DIR/$FILE.elf"
+    DUMP="$BUILD_DIR/$FILE.dump"
+
+    echo "Building ELF for $FILE (for disassembly)..."
+    $CC $COMMON_FLAGS -o "$ELF" "${OS_OBJS[@]}"
+
+    echo "Generating disassembly with addresses..."
+    riscv64-unknown-elf-objdump -d "$ELF" > "$DUMP"
+done
 
 # -------------------------------------------------
 # Create ROM
@@ -162,6 +206,7 @@ echo
 echo "===== Cleanup ====="
 rm -f "$BUILD_DIR"/*.elf
 rm -f "$BUILD_DIR"/*.bin
+rm -f "$BUILD_DIR"/*.o
 
 echo
 echo "Build complete: $ROM_FILE"
