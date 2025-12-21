@@ -5,6 +5,23 @@
 #include "utils.hpp"
 
 #include <string>
+#include <iostream>
+
+#include <termios.h>
+#include <unistd.h>
+#include <stdio.h>
+
+inline void set_input_mode(bool enable) {
+    static struct termios oldt, newt;
+    if(enable){
+        tcgetattr(STDIN_FILENO, &oldt);        // save old settings
+        newt = oldt;
+        newt.c_lflag &= ~(ICANON | ECHO);      // disable buffering and echo
+        tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+    } else {
+        tcsetattr(STDIN_FILENO, TCSANOW, &oldt); // restore old settings
+    }
+}
 
 typedef struct Instr{
 
@@ -137,14 +154,21 @@ public:
 
             execute();
 
-            printf("step: %d\n",step);
-
             if(step){
                 debug_mode = true;
-                while(getchar() != '\n');  // wait until Enter is pressed
-            }else{
-                debug_mode = false;
-                continue;
+                printf("Paused. Press any key to step, or 'c' to continue...\n");
+                set_input_mode(true); // disable buffering
+
+                char ch = getchar();
+                if(ch == 'c' || ch == 'C'){
+                    step = false;
+                    debug_mode = false;
+                }
+                if(ch == 'q'){
+                    return;
+                }
+
+                set_input_mode(false); // restore normal input
             }
 
             

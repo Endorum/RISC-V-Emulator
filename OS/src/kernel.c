@@ -24,6 +24,11 @@ the programs are on the ROM (~Disk) and are "loaded" into the RAM and then execu
 
 #include "../include/process.h"
 
+#include "../include/shell.h"
+
+
+
+
 
 // loads bytes from rom to ram, ram off is a "local" address
 // takes from ROM+addr and puts it to RAM+addr
@@ -45,17 +50,17 @@ static inline void riscv_halt(void) {
 }
 
 
+
 __attribute__((section(".text.start"))) 
 void _start(void){
 
     proc_init();
 
+    // load_from_disk(0x00010000, PROC_SIZE);
+    // load_from_disk(0x00020000, PROC_SIZE);
 
-    proc_create(0x00010000); // p1
-    proc_create(0x00020000); // p2
+    kernel_resume();
     
-    
-    proc_yield(); // start first process
     
     riscv_halt();
     return;

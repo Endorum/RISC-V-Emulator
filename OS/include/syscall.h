@@ -5,15 +5,20 @@
 #include "process.h"
 
 // work in the EMU
-#define SYS_PUTC  0x00
-#define SYS_PUTS  0x01
-#define SYS_EXIT  0x02
-#define SYS_STEP  0x03
-#define SYS_CONT  0x04
+#define SYS_PUTC 0x00
+#define SYS_PUTS 0x01
+#define SYS_EXIT 0x02
+#define SYS_STEP 0x03
+// host input
+#define SYS_GETC 0x04
+#define SYS_GETS 0x05
 
 // work internally
 #define SYS_YIELD 0xF0
 
+// Libc wrappers for common syscalls
+int sys_getc(void);       // read character, returns char or -1 on EOF
+void sys_putc(int c);     // write character
 
 static inline void syscall(int n, u32 a0, u32 a1, u32 a2)
 {

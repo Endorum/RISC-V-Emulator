@@ -1,7 +1,10 @@
 #include "../include/process.h"
+#include "../include/stdio.h"
 
 process_t proc_table[MAX_PROCS];
 u32 current_pid = 0;
+
+process_t proc;
 
 void proc_init(void){
     for ( u32 i = 0; i < MAX_PROCS; i++ ){
@@ -14,53 +17,100 @@ void proc_init(void){
 
     current_pid = (u32)-1; // no process running
 }
-
-int proc_create(u32 entry){
-    for( u32 i = 0; i < MAX_PROCS; i++ ){
-        if(proc_table[i].state == PROC_UNUSED){
-            proc_table[i].pid = i;
+int proc_create(u32 entry, u32 size){
+    for(u32 i = 0; i < MAX_PROCS; i++){
+        if(proc_table[i].state == PROC_UNUSED || proc_table[i].state == PROC_EXITED){
             proc_table[i].entry = entry;
             proc_table[i].sp = USER_STACK_TOP - i * USER_STACK_SIZE;
             proc_table[i].state = PROC_READY;
             proc_table[i].retval = 0;
+            proc_table[i].size = size;
             return i;
         }
     }
-
     return -1;
 }
 
+
 void proc_exit(u32 code){
-    proc_table[current_pid].state = PROC_EXITED;
-    proc_table[current_pid].retval = code;
-    proc_yield(); // switch away
+    proc.retval = code;
+    return;
 }
 
+
+// executes the first READY process in table
 void proc_yield(void){
     u32 pid = current_pid;
 
-
-    for( u32 i=0; i <= MAX_PROCS; i++ ){
+    for( u32 i = 0; i < MAX_PROCS; i++ ){
 
         if(proc_table[i].state == PROC_READY){
             
             current_pid = i;
-            proc_table[i].state = PROC_EXITED;
+            proc_table[i].state = PROC_RUNNING;
+
+            printf("Calling process with pid %d and entry: %X\n",current_pid,proc_table[i].entry);
 
             asm volatile (
                 "mv sp, %0\n"
+                "la ra, kernel_resume\n"
                 "jr %1\n"
                 :
                 : "r"(proc_table[i].sp),
-                  "r"(proc_table[i].entry)
+                "r"(proc_table[i].entry)
                 : "memory"
             );
-
+            break;
         }
         
     }
 
-    // No runnable process -> halt
-    // in the kernels _start
+    printf("no PROC_READY found!\n");
+    print_all_processes();
+    // If no process is READY, return to kernel / shell
+    current_pid = (u32)-1;
+    // control just returns to caller (proc_exit or shell loop)
 
+}
+
+void proc_run(u32 entry){
+    // set up process
+    proc.entry = entry;
+    proc.sp    = USER_STACK_TOP;
+    proc.retval = 0;
+
+    // jump to process
+    asm volatile (
+        "mv sp, %0\n"
+        "la ra, kernel_resume\n"  // return here when process calls SYS_EXIT
+        "jr %1\n"
+        :
+        : "r"(proc.sp),
+          "r"(proc.entry)
+        : "memory"
+    );
+}
+
+void print_state(proc_state_t state){
+    if(state == PROC_UNUSED) printf("UNUSED");return;
+    if(state == PROC_READY) printf("READY");return;
+    if(state == PROC_RUNNING) printf("RUNNING");return;
+    if(state == PROC_BLOCKED) printf("BLOCKED");return;
+    if(state == PROC_EXITED) printf("EXITED");return;
+    printf("???");
+}
+
+void print_process(process_t p){
+    printf("pid: %d\n",p.pid);
+    printf("entry: %X\n",p.entry);
+    printf("sp: %X\n",p.sp);
+    printf("state: ");
+    print_state(p.state); printf("\n");
+    printf("\n");
+}
+
+void print_all_processes(){
+    for(int i=0;i<MAX_PROCS;i++){
+        print_process(proc_table[i]);
+    }
 }

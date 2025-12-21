@@ -619,9 +619,15 @@ void CPU::ECALL_I(){
         case SYS_STEP:
             step = true;     
             break;
-        case SYS_CONT:
-            step = false;
+        case SYS_GETC:{
+            int c = getchar();
+            if(c == EOF){
+                set_reg(10, static_cast<u32>(-1));
+            } else {
+                set_reg(10, static_cast<u32>(c & 0xFF));
+            }
             break;
+        }
     }
 }
 
@@ -955,11 +961,68 @@ std::string reg_to_str(u8 idx){
 void CPU::print_instr() {
     Instr instr = current_instr;
 
+    std::string output = "";
+
+    output += debug_mnemonic + " ";
+
     // printf("instruction: %s\n",debug_mnemonic.c_str());
-    printf("    rs2:     %s\n", reg_to_str(current_instr.rs2).c_str()); 
-    printf("    rs1:     %s\n", reg_to_str(current_instr.rs1).c_str()); 
-    printf("    rd:      %s\n", reg_to_str(current_instr.rd).c_str()); 
-    printf("    imm: %08X = %d = %u\n",instr.imm,instr.imm,instr.imm);
+    // printf("    rs2:     %s\n", reg_to_str(current_instr.rs2).c_str()); 
+    // printf("    rs1:     %s\n", reg_to_str(current_instr.rs1).c_str()); 
+    // printf("    rd:      %s\n", reg_to_str(current_instr.rd).c_str()); 
+    // printf("    imm: %08X = %d = %u\n",instr.imm,instr.imm,instr.imm);
+
+    switch(instr.format){
+        default: {printf("Unknown format\n"); exit(0);}
+
+        case IF_R:
+            output += reg_to_str(current_instr.rd) + ", ";
+            output += reg_to_str(current_instr.rs1) + ", ";
+            output += reg_to_str(current_instr.rs2);
+            break;
+
+        case IF_I:{
+
+            // lw rd imm(rs1)
+            if(instr.opcode == 0x03){
+                output += reg_to_str(current_instr.rd) + ", ";
+                output += std::to_string(instr.imm) + "(";
+                output += reg_to_str(current_instr.rs1) + ")";
+                break;
+            }
+
+            output += reg_to_str(current_instr.rd) + ", ";
+            output += reg_to_str(current_instr.rs1) + ", ";
+            output += std::to_string(instr.imm);
+            break;
+        }
+            
+
+
+        case IF_S:
+            output += reg_to_str(instr.rs2) + ", ";
+            output += std::to_string(instr.imm) + "(" + reg_to_str(instr.rs1) + ")";
+            break;
+
+        case IF_B:
+            output += reg_to_str(instr.rs1) + ", ";
+            output += reg_to_str(instr.rs2) + ", ";
+            output += std::to_string(instr.imm);
+            break;
+
+        case IF_U:
+            output += reg_to_str(instr.rd) + ", ";
+            output += std::to_string(instr.imm);
+            break;
+
+        case IF_J:
+            output += reg_to_str(instr.rd) + ", ";
+            output += std::to_string(instr.imm);
+            break;
+
+    
+    }
+
+    printf("%s\n",output.c_str());
     
 
 
@@ -1025,7 +1088,7 @@ void CPU::print_regf_file(){
 }
 
 void CPU::debug() {
-    printf("Instruction at %08X : %s\n", prev_pc, debug_mnemonic.c_str());
+    printf("Instruction at %08X : ", prev_pc);
     print_instr();
     print_reg_file();
     printf("STACK\n");

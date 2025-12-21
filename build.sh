@@ -60,6 +60,7 @@ OS_SRCS=(
     "$LIBC_DIR/string.c"
     "$LIBC_DIR/stdio.c"
     "$LIBC_DIR/syscall.c"
+    "$SRC_DIR/shell.c"
 )
 
 echo "Compiling OS..."
@@ -101,6 +102,7 @@ for PROG in "${PROGRAM_FILES[@]}"; do
     # ---- Compile & link (WITH libc) ----
     $CC $COMMON_FLAGS \
         -T "user.ld" \
+        -Wl,--defsym=USER_BASE=$OFFSET \
         -nostdlib -ffreestanding \
         -o "$ELF" \
         "$PROG" \
@@ -108,7 +110,8 @@ for PROG in "${PROGRAM_FILES[@]}"; do
         "$LIBC_DIR/syscall.c" \
         "$LIBC_DIR/malloc.c" \
         "$LIBC_DIR/string.c" \
-        "$SRC_DIR/process.c" 
+        "$SRC_DIR/process.c" \
+        "$SRC_DIR/shell.c"
 
     # ---- Generate assembly (program only) ----
     $CC $COMMON_FLAGS \
@@ -210,3 +213,7 @@ rm -f "$BUILD_DIR"/*.o
 
 echo
 echo "Build complete: $ROM_FILE"
+
+echo
+echo "creating objdump of rom.bin"
+riscv64-unknown-elf-objdump -b binary -m riscv:rv32 -D --adjust-vma=0x0 rom.bin > rom.s

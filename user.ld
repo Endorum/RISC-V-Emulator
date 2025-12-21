@@ -1,6 +1,6 @@
 SECTIONS
 {
-    . = 0x10000;    /* start of user program in ROM */
+    . = USER_BASE;
     .text.start : { *(.text.start) }
     .text : { *(.text) }
     .rodata : { *(.rodata) }

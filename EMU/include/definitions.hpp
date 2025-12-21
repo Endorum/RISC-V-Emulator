@@ -37,7 +37,9 @@ static_assert(sizeof(f32) * 8 == 32, "f32 must be 32-bit");
 #define SYS_PUTS 0x01
 #define SYS_EXIT 0x02
 #define SYS_STEP 0x03
-#define SYS_CONT 0x04
+// read a single character from host stdin (blocking)
+#define SYS_GETC 0x04
+#define SYS_GETS 0x05
 
 
 typedef enum{

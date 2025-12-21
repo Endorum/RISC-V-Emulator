@@ -123,3 +123,20 @@ static void print_hex(unsigned v, int upper){
 
     while(i--) putc(buf[i]);
 }
+
+void read_line(char* buf, u32 max_len){
+    u32 i = 0;
+    while(i < max_len - 1){
+        char c = sys_getc();
+        if (c == '\r' || c == '\n'){
+            printf("\n");
+            break;
+        }
+
+        // printf("%c", c);
+        buf[i++] = c;
+    }
+
+    buf[i] = '\0';
+}
+
