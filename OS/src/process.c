@@ -34,6 +34,10 @@ int proc_create(u32 entry, u32 size){
 
 void proc_exit(u32 code){
     proc.retval = code;
+
+    printf("Process exited with code: %d\n",code);
+    
+
     return;
 }
 

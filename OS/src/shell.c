@@ -4,6 +4,7 @@
 #include "malloc.h"
 #include "process.h"
 #include "../include/string.h"
+#include "syscall.h"
 
 u32 setup_user_stack(u32 user_sp, int argc, char argv_kernel[MAX_ARGS][ARG_LEN]){
     u32 sp = user_sp;
@@ -31,7 +32,7 @@ u32 setup_user_stack(u32 user_sp, int argc, char argv_kernel[MAX_ARGS][ARG_LEN])
 
 __attribute__((section(".text")))
 void kernel_resume(void) {
-    char line[32];
+    char line[256] = {0};
 
     while(1){
         printf("$ ");
@@ -45,30 +46,35 @@ void kernel_resume(void) {
 
 
         // setting up the arguments
-        int argc=0;
-        while(token){
-            
+        int argc = 0;
+        while(token) {
+
             if(argc == 0) program_name = token;
 
+            // check BEFORE storing
+            if(argc >= MAX_ARGS){
+                printf("Error: only up to %d arguments allowed. Extra arguments ignored.\n", MAX_ARGS);
+                err("Too many arguments");
+                break;  // stop processing more tokens
+            }
+
             strcpy(argv[argc], token);
+            argc++;
 
             token = strtok(NULL, " \t\n");
-            argc++;
         }
 
         // get ram offset and run the program
-        u32 off = get_addr(program_name);
-
-        if(off != (u32)(-1)){
-            proc_run(off, argc, argv);
-        }else{
-            printf("Unknown command: %s\n",program_name);
+        if(argc > 0){
+            u32 off = get_addr(program_name);
+            if(off != (u32)(-1)){
+                proc_run(off, argc, argv);
+                free(argv);
+            } else {
+                printf("Unknown command: %s\n", program_name);
+            }
         }
 
-        
-
-        free(argv);
-        
     }
 
 }

@@ -9,9 +9,9 @@
 #define SYS_PUTS 0x01
 #define SYS_EXIT 0x02
 #define SYS_STEP 0x03
-// host input
 #define SYS_GETC 0x04
 #define SYS_GETS 0x05
+#define SYS_ERR  0x06
 
 // work internally
 #define SYS_YIELD 0xF0
@@ -46,5 +46,9 @@ static inline void syscall(int n, u32 a0, u32 a1, u32 a2)
         : "memory"
     );
 }
+
+
+void exit(u32 code);
+void err(const char* msg);
 
 #endif
