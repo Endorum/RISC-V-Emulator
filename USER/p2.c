@@ -2,17 +2,15 @@
 #include "stdio.h"
 #include "syscall.h"
 
-int main(){
-    int n = 0xFF00;
-    int c = 0x0022;
-    int d = n + c; // FF22 should end up somewhere in the reg file
-    printf("Hello from p2\n");
-    return d;
+int main(int argc, char** argv){
+    for (int i = 0; i < argc; i++)
+        printf("argv[%d] = %s\n", i, argv[i]);
+    return 0;
 }
 
 __attribute__((section(".text.start")))
-void _start(void) {
-    int ret = main();
+void _start(int argc, char** argv) {
+    int ret = main(argc, argv);
     syscall(SYS_EXIT, ret, 0, 0);
     return;
 }

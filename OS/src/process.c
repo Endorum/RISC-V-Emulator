@@ -73,20 +73,29 @@ void proc_yield(void){
 
 }
 
-void proc_run(u32 entry){
-    // set up process
-    proc.entry = entry;
-    proc.sp    = USER_STACK_TOP;
-    proc.retval = 0;
+void proc_run(u32 entry, int argc, char argv[MAX_ARGS][ARG_LEN]){
+
+    u32 user_sp = USER_STACK_TOP;
+    u32 argv_user = setup_user_stack(user_sp, argc, argv);
+
+    // // set up process
+    // proc.entry = entry;
+    // proc.sp    = USER_STACK_TOP;
+    // proc.retval = 0;
+
 
     // jump to process
     asm volatile (
         "mv sp, %0\n"
-        "la ra, kernel_resume\n"  // return here when process calls SYS_EXIT
-        "jr %1\n"
+        "mv a0, %1\n"   // argc
+        "mv a1, %2\n"   // argv
+        "la ra, kernel_resume\n"
+        "jr %3\n"
         :
-        : "r"(proc.sp),
-          "r"(proc.entry)
+        : "r"(argv_user),
+          "r"(argc),
+          "r"(argv_user),
+          "r"(entry)
         : "memory"
     );
 }

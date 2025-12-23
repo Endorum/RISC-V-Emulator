@@ -2,6 +2,7 @@
 #define PROCESS_H
 
 #include "stdint.h"
+#include "shell.h"
 
 #define MAX_PROCS 4
 
@@ -38,7 +39,8 @@ void proc_init(void);
 int proc_create(u32 entry, u32 size);
 void proc_exit(u32 code);
 void proc_yield(void);
-void proc_run(u32 entry);
+
+void proc_run(u32 entry, int argc, char argv[MAX_ARGS][ARG_LEN]);
 
 void print_process(process_t p);
 void print_all_processes();

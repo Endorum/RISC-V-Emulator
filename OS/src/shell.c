@@ -1,8 +1,33 @@
 
 #include "shell.h"
 #include "stdio.h"
+#include "malloc.h"
 #include "process.h"
-#include "string.h"
+#include "../include/string.h"
+
+u32 setup_user_stack(u32 user_sp, int argc, char argv_kernel[MAX_ARGS][ARG_LEN]){
+    u32 sp = user_sp;
+
+    // store adresses of user-space argument strings
+    u32 argv_user[MAX_ARGS];
+
+    // Copy argument strings into user stack (backwards)
+    for(int i=argc - 1; i >= 0; i--){
+        u32 len = strlen(argv_kernel[i]) + 1;
+        sp -= len;
+        memcpy((void*)sp, argv_kernel[i], len);
+        argv_user[i] = sp;
+    }
+
+    // Align stack to 4 bytes
+    sp &= ~0x3;
+
+    // Push argv pointers
+    sp -= argc * sizeof(u32);
+    memcpy((void*)sp, argv_user, argc * sizeof(u32));
+
+    return sp; // argv lives here now
+}
 
 __attribute__((section(".text")))
 void kernel_resume(void) {
@@ -12,14 +37,50 @@ void kernel_resume(void) {
         printf("$ ");
         read_line(line, sizeof(line));
 
-        if(strcmp(line, "p1") == 0) {
-            proc_run(0x10000);
+        char* token = strtok(line, " \t\n");
+        char* program_name; // first one is assumed to be the name of a program e.g. p1
+
+        // max of 16 arguments with each beign a max of 256 bytes long
+        char(*argv)[ARG_LEN] = malloc(MAX_ARGS * sizeof(*argv));
+
+
+        // setting up the arguments
+        int argc=0;
+        while(token){
+            
+            if(argc == 0) program_name = token;
+
+            strcpy(argv[argc], token);
+
+            token = strtok(NULL, " \t\n");
+            argc++;
         }
-        else if(strcmp(line, "p2") == 0) {
-            proc_run(0x20000);
+
+        // get ram offset and run the program
+        u32 off = get_addr(program_name);
+
+        if(off != (u32)(-1)){
+            proc_run(off, argc, argv);
+        }else{
+            printf("Unknown command: %s\n",program_name);
         }
-        else {
-            printf("Unknown command: %s\n", line);
-        }
+
+        
+
+        free(argv);
+        
     }
+
+}
+
+
+// return -1 if not found
+u32 get_addr(const char* program_name){
+    int amnt = NUM_COMMANDS;
+
+    for(int i=0;i<amnt;i++){
+        if(strcmp(program_name, commands[i].name) == 0) return commands[i].rom_offset;
+    }
+
+    return (u32)-1;
 }
