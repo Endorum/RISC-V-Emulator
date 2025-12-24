@@ -26,7 +26,9 @@ the programs are on the ROM (~Disk) and are "loaded" into the RAM and then execu
 
 #include "../include/shell.h"
 
+#include "../include/disk_offset.h"
 
+#include "../include/fat12.h"
 
 
 
@@ -50,16 +52,37 @@ static inline void riscv_halt(void) {
 }
 
 
+void boot(){
+    // proc_init();
+
+    // Copy disk image to RAM
+    printf("Copying disk image into RAM\n");
+    memcpy((void*)DISK_BASE, (void*)(ROM+DISK_OFFSET), DISK_SIZE);
+
+    // mount FAT12 from RAM
+    printf("Moungint FAT12 from RAM\n");
+    fat12_mount((u8*)DISK_BASE);
+
+    
+
+
+    load_file_to("P1.BIN", (void*)0x00010000);
+    load_file_to("P2.BIN", (void*)0x00020000);
+
+    
+
+}
+
+
 
 __attribute__((section(".text.start"))) 
 void _start(void){
 
-    proc_init();
 
-    // load_from_disk(0x00010000, PROC_SIZE);
-    // load_from_disk(0x00020000, PROC_SIZE);
+    boot();
 
-    kernel_resume();
+    // enter shell
+    // kernel_resume();
     
     
     riscv_halt();

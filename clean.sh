@@ -1,2 +1,2 @@
-rm -fr OS/build
+rm -fr OS/build/*
 rm rom.bin

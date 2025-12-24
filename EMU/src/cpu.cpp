@@ -628,6 +628,21 @@ void CPU::ECALL_I(){
             }
             break;
         }
+        case SYS_ERR:{
+            u32 addr = get_reg(10);
+
+            char buffer[256];
+
+            for(int i=0;i<sizeof(buffer)-1; i++){
+                buffer[i] = load(addr + i, BYTE);
+                if(buffer[i] == 0 ) break;
+            }
+
+            buffer[sizeof(buffer)-1] = 0;
+            printf("%s\n", buffer);
+
+            exit(-1);
+        }
     }
 }
 

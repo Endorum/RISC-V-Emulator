@@ -1,0 +1,1 @@
+#define DISK_OFFSET 0x2408

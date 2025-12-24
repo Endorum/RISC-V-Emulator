@@ -39,7 +39,7 @@ void print_stack_memory(u32 stack, Memory* memory) {
 }
 
 void print_memory(u32 start_addr, u32 amount, Memory* memory) {
-    amount = amount;
+    // amount = amount;
 
     // Ensure start address is word-aligned
     start_addr &= ~0x3;
